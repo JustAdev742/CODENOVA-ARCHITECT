@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devstral Architecture Studio | CodeNova-Studios</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://js.puter.com/v2/"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+    <link id="hljs-theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <style>
+        :root {
+            --bg-base: #0d1117;
+            --bg-panel: #161b22;
+            --border-color: #30363d;
+            --accent: #2ea043;
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
+            --bg-glass: rgba(22,27,34,0.7);
+            --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.27);
+        }
+        [data-theme="light"] {
+            --bg-base: #f6f8fa;
+            --bg-panel: #ffffffcc;
+            --border-color: #d0d7de;
+            --accent: #2ea043;
+            --text-main: #24292f;
+            --text-muted: #6e7781;
+            --bg-glass: rgba(255,255,255,0.8);
+            --shadow-glass: 0 2px 16px #ccc;
+        }
+        body {
+            background: var(--bg-base);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        #topbar { height: 45px; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; padding: 0 16px; z-index: 50; position: relative;}
+        #workbench { display: grid; grid-template-columns: 260px 1fr 420px; height: calc(100vh - 45px);}
+        .panel { border-right: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; background: var(--bg-glass); backdrop-filter: blur(9px); box-shadow: var(--shadow-glass);}
+        .panel-header { padding: 10px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); border-bottom: 1px solid var(--border-color); background: var(--bg-panel);}
+        #file-tree { flex: 1; overflow-y: auto; padding: 10px 0;}
+        .file-item { padding: 6px 18px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 10px; color: var(--text-muted); transition: all 0.2s; position: relative;}
+        .file-item:hover { background: #21262d44; color: white;}
+        .file-item.active { background: #1f6feb44; border-left: 3px solid #58a6ff; color: #58a6ff; font-weight: 600;}
+        .file-action-btn { margin-left: auto; opacity:0.7; transition:0.2s; font-size:13px; background: none; border: none;}
+        .file-action-btn:hover{opacity:1; color: #f85149;}
+        .file-download-btn { color:#2ea043;}
+        .file-download-btn:hover{color:#58a6ff;}
+        .file-rename-btn { color:#f7c948;}
+        .file-rename-btn:hover{color:#f78166;}
+        #editor-layout { display: flex; flex-direction: column; height: 100%; background: #010409;}
+        #tabs { display: flex; background: var(--bg-panel); border-bottom: 1px solid var(--border-color); overflow-x: auto;}
+        .tab { padding: 10px 20px; font-size: 12px; border-right: 1px solid var(--border-color); cursor: pointer; color: var(--text-muted); white-space: nowrap; transition:0.2s; display: flex; align-items:center;}
+        .tab.active { background: #010409; color: #f78166; border-bottom: 2px solid #f78166;}
+        .tab-close-btn,.tab-download-btn {margin-left: 6px; font-size:11px; color: var(--text-muted); padding:0; background:none; border: none; opacity:0.7; transition:0.18s;}
+        .tab-close-btn:hover{color: #f85149; opacity:1;}
+        .tab-download-btn:hover{color: #2ea043; opacity:1;}
+        #monaco-container { flex: 1;}
+        #terminal-panel { height: 220px; border-top: 1px solid var(--border-color); background: #010409; display: flex; flex-direction: column;}
+        #terminal-output { flex: 1; overflow-y: auto; padding: 15px; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px; line-height: 1.6;}
+        .term-success { color: #3fb950;}
+        .term-error { color: #f85149;}
+        .term-system { color: #58a6ff; font-weight: bold;}
+        #chat-history { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px;}
+        .msg { padding: 14px; border-radius: 8px; font-size: 14px; line-height: 1.6; border: 1px solid var(--border-color);}
+        .msg-user { background: #21262d; align-self: flex-end; max-width: 85%; border-color: #388bfd;}
+        .msg-ai { background: transparent; align-self: flex-start; width: 100%; border: none;}
+        .msg-ai pre { background: #0d1117; border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; overflow-x: auto; margin: 12px 0;}
+        .mermaid { background: white !important; border-radius: 8px; margin: 15px 0; display: flex; justify-content: center; padding: 20px;}
+        #chat-input-container { padding: 20px; background: var(--bg-panel); border-top: 1px solid var(--border-color);}
+        #chat-input { width: 100%; background: var(--bg-base); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; color: inherit; resize: none; outline: none; font-size: 14px; transition: border-color 0.3s;}
+        #chat-input:focus { border-color: #58a6ff; box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);}
+        .search-container { padding: 8px 12px 2px 12px; border-bottom: 1px solid var(--border-color); background: var(--bg-panel);}
+        .search-input { width: 100%; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-base);}
+        .popover {position: absolute; left:0; top:102%; z-index:999; min-width: 320px; color:var(--text-main); background:var(--bg-glass); border:1px solid var(--border-color); border-radius:7px; box-shadow: var(--shadow-glass);}
+        .popover-content{ padding:12px 18px; font-size:13px;}
+        .dropdown { position: relative; display: inline-block;}
+        .dropdown-content {display: none; position: absolute; background:var(--bg-panel); color:var(--text-main);min-width:330px; border: 1px solid var(--border-color); padding:0px 0 6px 0; border-radius:8px; margin-top:7px; right:0; z-index:100;}
+        .dropdown.show .dropdown-content {display:block;}
+        .dropdown-btn { background: #222b3b; color:white; padding:7px 15px; border-radius:7px; font-size:13px; font-weight:600; border:1px solid var(--border-color); text-align: left;}
+        .dropdown-btn:after { content:'▼'; font-size:11px; margin-left:12px;}
+        .dropdown-option { padding: 9px 17px 8px 17px; cursor:pointer; transition:0.14s;color:var(--text-main);}
+        .dropdown-option.selected { background: #0d1117a7; font-weight:600; color:#2ea043;}
+        .dropdown-option:hover:not(.selected){ background: #243670aa;}
+        .dropdown-help { font-size:11px; color:var(--text-muted); padding-left:32px;}
+        .theme-btn {margin-left:10px; padding:6px 14px; border-radius:20px;background: #f78166; color:white; font-size:11px; font-weight:700; border:none;}
+        .theme-btn.light {background: #21262d; color:#f78166; border:1px solid #c9d1d9;}
+        .preview-btn { border:1px solid var(--border-color); background:rgba(110,184,240,0.09); color:#3b82f6; padding:4px 11px; font-size:12px; border-radius:5px; font-weight:700; margin-left:12px;}
+        .preview-btn:hover{background:#24367022;}
+        .drawer-btn { background:none; border:none; color:var(--text-muted); font-size:18px; margin:3px 0 0 2px;}
+        .drawer-btn:hover{color:#388bfd;}
+        @media (max-width:950px){
+            #workbench{grid-template-columns: 37vw 1fr;}
+            section.panel:last-child{display:none;}
+        }
+        @media (max-width:760px){
+            #workbench{grid-template-columns: 1fr;}
+            aside.panel{display:none;}
+            #mini-tree-btn{display:block !important;}
+        }
+        @media (max-width:650px){
+            #workbench{display:block;height:auto;}
+            #monaco-container{min-height:30vh;}
+            section.panel:last-child,#terminal-panel{display:block;min-width:100vw;}
+        }
+        .hidden{display:none!important;}
+    </style>
+</head>
+<body data-theme="dark">
+    <div id="topbar">
+        <div class="flex items-center gap-2">
+            <button id="mini-tree-btn" class="drawer-btn hidden" title="Show Files">&#9776;</button>
+            <span class="text-white font-black tracking-tighter text-lg">CODENOVA <span class="text-blue-500 font-light">ARCHITECT</span></span>
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Studio Engine: Online</span>
+            </div>
+        </div>
+        <div class="flex gap-2 items-center relative">
+
+            <div class="dropdown mx-2" id="aiDropdown">
+                <button class="dropdown-btn" id="modelBtn"><span id="ai-selected-label">Auto (Best)</span></button>
+                <div class="dropdown-content" id="dropdownContent">
+                    <div class="dropdown-option" data-model="auto">
+                        <b>Auto</b> (Recommended)<br>
+                        <span class="dropdown-help">Lets AI route queries to best model (gpt-4o for intent/difficulty analysis).</span>
+                    </div>
+                    <div class="dropdown-option" data-model="mistralai/devstral-2512">
+                        mistralai/devstral-2512<br>
+                        <span class="dropdown-help">✅ 123B params, best for agents/CI/CD/Kubernetes</span>
+                    </div>
+                    <div class="dropdown-option" data-model="meta-llama/llama-3.3-70b-instruct:free">
+                        meta-llama/llama-3.3-70b-instruct:free<br>
+                        <span class="dropdown-help">✅ 70B params, system architecture, secure microservices</span>
+                    </div>
+                    <div class="dropdown-option" data-model="google/gemini-2.5-pro-exp-03-25:free">
+                        google/gemini-2.5-pro-exp-03-25:free<br>
+                        <span class="dropdown-help">✅ 1M context, for huge codebases and pipelines</span>
+                    </div>
+                    <div class="dropdown-option" data-model="deepseek/deepseek-v3-base:free">
+                        deepseek/deepseek-v3-base:free<br>
+                        <span class="dropdown-help">✅ APIs, databases, distributed systems</span>
+                    </div>
+                    <div class="dropdown-option" data-model="minimax/minimax-m2.5">
+                        minimax/minimax-m2.5<br>
+                        <span class="dropdown-help">✅ Tool use, debugging, agents, SWE-bench 80%</span>
+                    </div>
+                    <div class="dropdown-option" data-model="gpt-4o">
+                        gpt-4o + DALL-E-3<br>
+                        <span class="dropdown-help">✅ UI/UX design, Tailwind, CSS, live app designs (always routes design)</span>
+                    </div>
+                </div>
+            </div>
+            <button id="themeBtn" class="theme-btn" title="Toggle light/dark theme">🌑 Theme</button>
+            <button onclick="simulateBuild()" class="px-4 py-1.5 text-xs font-bold rounded bg-gray-800 hover:bg-gray-700 text-white border border-gray-600 transition-all active:scale-95">COMPILE</button>
+            <button onclick="exportProject()" class="px-4 py-1.5 text-xs font-bold rounded bg-blue-600 hover:bg-blue-500 text-white transition-all active:scale-95">EXPORT</button>
+        </div>
+    </div>
+    <div id="workbench">
+        <!-- SIDEBAR -->
+        <aside class="panel" id="sidebar-panel">
+            <div class="panel-header flex justify-between items-center">
+                <span>Workspace Explorer</span>
+                <button class="preview-btn" title="New File" onclick="newFilePopup()">+ New File</button>
+            </div>
+            <div class="search-container">
+                <input type="text" placeholder="Search files..." id="file-search" class="search-input" autocomplete="off">
+            </div>
+            <div id="file-tree"></div>
+            <div class="panel-header border-t border-[#30363d] flex justify-between items-center">
+                <span>System Constraints</span>
+                <button class="preview-btn" title="Edit System Constraints" onclick="toggleConstraints()" style="background:transparent;">✏️</button>
+            </div>
+            <div class="p-4 bg-[#0d1117] flex-1 overflow-y-auto" id="constraints-panel" style="transition: height 0.24s;">
+                <div class="space-y-4" id="constraints-read">
+                    <div class="p-2 border-l-2 border-blue-500 bg-blue-500/10 text-[11px]">
+                        <p class="text-blue-400 font-bold mb-1" id="arch-title">ARCHITECTURE TARGET</p>
+                        <p class="text-gray-300" id="arch-desc">Standalone High-Performance Systems (C++/Node.js)</p>
+                    </div>
+                    <div class="p-2 border-l-2 border-yellow-500 bg-yellow-500/10 text-[11px]">
+                        <p class="text-yellow-400 font-bold mb-1" id="strict-title">STRICT MODE</p>
+                        <p class="text-gray-300" id="strict-desc">Thread-safety, Memory optimization, and ACID compliance required.</p>
+                    </div>
+                </div>
+                <form class="space-y-4 hidden" id="constraints-edit" onsubmit="saveConstraints(event)">
+                    <div>
+                        <label class="block text-[11px] text-blue-400 font-bold">ARCHITECTURE TARGET</label>
+                        <input class="w-full p-1 bg-[#21262d] text-xs text-gray-100 mt-1 rounded border border-[#30363d]" type="text" id="edit-arch-desc">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-yellow-400 font-bold">STRICT MODE</label>
+                        <input class="w-full p-1 bg-[#21262d] text-xs text-gray-100 mt-1 rounded border border-[#30363d]" type="text" id="edit-strict-desc">
+                    </div>
+                    <button type="submit" class="preview-btn bg-blue-600 mt-3" style="border:none;">Save</button>
+                </form>
+            </div>
+        </aside>
+        <!-- MAIN EDITOR -->
+        <main class="panel" id="editor-layout">
+            <div id="tabs"></div>
+            <div class="flex flex-row items-center border-b border-[#30363d] p-2 gap-2" style="background:var(--bg-panel);">
+                <button class="preview-btn" title="Preview current file" onclick="previewFile()">Preview</button>
+                <span id="preview-info" class="text-[11px] text-blue-400 ml-2"></span>
+                <input type="text" id="content-search" class="search-input ml-auto" placeholder="Search in files..." style="max-width:195px;">
+            </div>
+            <div id="monaco-container" style="min-height:0;"></div>
+            <section id="terminal-panel">
+                <div class="panel-header flex justify-between items-center">
+                    <span>Debug Console</span>
+                    <button onclick="clearTerminal()" class="text-[9px] text-gray-500 hover:text-white transition">CLEAR OUTPUT</button>
+                </div>
+                <div id="terminal-output">
+                    <div class="term-system">>>> ARCHITECT_INITIALIZED: Ready for low-level systems design.</div>
+                </div>
+            </section>
+        </main>
+        <!-- CHAT/AI PANEL -->
+        <section class="panel">
+            <div class="panel-header flex justify-between items-center">
+                <span class="text-blue-400">Devstral Orchestrator</span>
+                <span id="ai-status" class="text-[10px] text-gray-500">READY</span>
+            </div>
+            <div id="chat-history"></div>
+            <div id="chat-input-container">
+                <textarea id="chat-input" rows="3" placeholder="Command the AI to build, refactor, or visualize..."></textarea>
+                <div class="mt-2 text-[10px] text-gray-600 flex justify-between">
+                    <span>SHIFT + ENTER for new line</span>
+                    <span>Mistral Devstral-2512, GPT-4o, Gemini, Llama, DeepSeek, Minimax</span>
+                </div>
+            </div>
+        </section>
+    </div>
+    <!-- File Download Helper -->
+    <a id="file-download-link" style="display:none"></a>
+    <!-- File Create/Rename Modal -->
+    <div id="modal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
+        <div class="bg-[#161b22] rounded-lg p-7 w-[90vw] max-w-xs border border-[#30363d]">
+            <div id="modal-label" class="text-sm mb-2"></div>
+            <input id="modal-input" class="w-full p-2 rounded border text-gray-900" type="text" style="font-family:monospace;">
+            <div class="mt-3 text-right">
+                <button onclick="closeModal()" class="preview-btn bg-gray-200 text-[#222]">Cancel</button>
+                <button onclick="modalConfirm()" class="preview-btn bg-blue-600 ml-2" id="modal-ok-btn">OK</button>
+            </div>
+        </div>
+    </div>
+    <!-- Preview Modal -->
+    <div id="preview-modal" class="hidden fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center overflow-auto">
+        <div class="bg-[#161b22] rounded-lg p-7 w-[96vw] max-w-2xl border border-[#30363d] relative min-h-[200px]">
+            <button onclick="closePreview()" class="preview-btn absolute right-4 top-4">✕</button>
+            <div id="preview-modal-content" class="mt-4"></div>
+        </div>
+    </div>
+<script>
+/* ====== WORKSPACE & CHAT STATE (with localStorage persistence!) ====== */
+let vfs = {};
+let chatState = { history: [] }; // For local chat log
+let constraints = {
+    arch: 'Standalone High-Performance Systems (C++/Node.js)',
+    strict: 'Thread-safety, Memory optimization, and ACID compliance required.'
+};
+let theme = localStorage.getItem('studio_theme') || 'dark';
+let activeFile = null;
+let monacoEditor = null;
+let curTabs = [];
+const editorModels = {};
+const SYSTEM_PROMPT_BASE = `You are an elite AI Architect. Use this format for files: 
+\`\`\`[lang]:[path]
+[code]
+\`\`\`
+Use Mermaid for diagrams. Be direct, technical, and precise.`;
+
+/* ====== MODEL LIST/ROUTER ====== */
+const aiModels = [
+    {
+        key: "auto", name: "Auto", description: "Routes to best model using gpt-4o for intent/complexity analysis and fallback.", info: "Auto routes design-related to GPT-4o, hard coding to Devstral, microservices to Llama etc. Reliable and cheap.",
+    },
+    {
+        key: "mistralai/devstral-2512",
+        name: "mistralai/devstral-2512",
+        description: "123B | 256K ctx | SWE-bench 72.2%",
+        info: "Agentic coding, multi-file logic, CI/CD, Kubernetes. Free via Puter.js."
+    },
+    {
+        key: "meta-llama/llama-3.3-70b-instruct:free",
+        name: "meta-llama/llama-3.3-70b-instruct:free",
+        description:"70B, GPT-4-level, secure microservices",
+        info:"System architecture, security, scalable backend, free on OpenRouter."
+    },
+    {
+        key: "google/gemini-2.5-pro-exp-03-25:free",
+        name: "google/gemini-2.5-pro-exp-03-25:free",
+        description:"1M context, great for pipelines",
+        info:"Massive codebase support, Google Cloud, free via Puter.js."
+    },
+    {
+        key: "deepseek/deepseek-v3-base:free",
+        name:"deepseek/deepseek-v3-base:free",
+        description:"Tech expert, DBs, distributed sys",
+        info: "APIs, databases, scalable systems, low cost."
+    },
+    {
+        key:"minimax/minimax-m2.5",
+        name:"minimax/minimax-m2.5",
+        description:"230B total, 10B active, 80% SWE-bench",
+        info:"Debugging, Autonomous agents, free on Puter.js."
+    },
+    {
+        key:"gpt-4o",
+        name:"gpt-4o + DALL-E-3",
+        description:"Best for UI/UX, Tailwind, CSS",
+        info:"Design, frontend, preview and theme via DALL-E/GPT-4o. Free"
+    }
+];
+let selectedModel = localStorage.getItem('studio_ai_model') || "auto";
+
+/* ========== THEME/RESPONSIVE ========== */
+function setTheme(t){
+    document.body.setAttribute('data-theme', t);
+    if(t==="dark") 
+        document.getElementById('hljs-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css";
+    else
+        document.getElementById('hljs-theme').href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css";
+    localStorage.setItem('studio_theme', t);
+    theme = t;
+}
+document.getElementById('themeBtn').onclick=function(){
+    theme = theme==='dark'?'light':'dark';
+    setTheme(theme);
+    this.classList.toggle('light',theme==="light");
+    this.innerText = theme === "dark" ? "🌑 Theme" : "☀️ Theme";
+};
+setTheme(theme);
+
+/* ========== STORAGE ========== */
+function saveVFS(){ localStorage.setItem('studio_vfs',JSON.stringify(vfs)); }
+function saveChat(){ localStorage.setItem('studio_chat',JSON.stringify(chatState)); }
+function saveActiveFile(){ localStorage.setItem('studio_file', activeFile); }
+function saveConstraintsLS(){ localStorage.setItem('studio_constraints',JSON.stringify(constraints)); }
+function loadVFS(){
+    try{vfs=JSON.parse(localStorage.getItem('studio_vfs'))||{}}catch{vfs={}};
+    if(Object.keys(vfs).length===0) {
+        vfs = {
+            "src/engine.cpp": "// CodeNova High-Performance Engine Core\n#include <iostream>\n\nint main() {\n    std::cout << \"Initializing CodeNova Engine...\" << std::endl;\n    return 0;\n}",
+            "README.md": "# CodeNova Studio Project\nGenerated by AI Architecture Orchestrator."
+        };
+    }
+}
+function loadChat(){
+    try{chatState=JSON.parse(localStorage.getItem('studio_chat'))||{history:[]}}catch{chatState={history:[]}};
+}
+function loadActiveFile(){ 
+    let af=localStorage.getItem('studio_file'); 
+    activeFile = (af && vfs[af])?af:Object.keys(vfs)[0];
+}
+function loadConstraints(){
+    try{let c=JSON.parse(localStorage.getItem('studio_constraints'));if(c)constraints=c;}catch{}
+}
+function hardSave(){saveVFS();saveActiveFile();saveChat();saveConstraintsLS();}
+window.onbeforeunload=hardSave;
+
+/* ====== FILE SYSTEM & UI ====== */
+function updateUI(){
+    // File explorer, tabs
+    renderFileTree();
+    renderTabs();
+    if(monacoEditor) { 
+        monacoEditor.setValue(vfs[activeFile]||"");
+        monaco.editor.setModelLanguage(monacoEditor.getModel(), getMonacoLang(activeFile));
+        monacoEditor.focus();
+    }
+    saveVFS(); saveActiveFile();
+}
+
+/* --- File tree --- */
+function renderFileTree(){
+    const tree = document.getElementById('file-tree');
+    tree.innerHTML = "";
+    // search filtering
+    let query = document.getElementById('file-search').value?.toLowerCase() || '';
+    Object.keys(vfs).sort().forEach(path=>{
+        if(!path.toLowerCase().includes(query)) return;
+        let el=document.createElement('div');
+        el.className="file-item"+(path===activeFile?' active':'');
+        el.innerHTML=`<span>📄</span> ${path}
+        <button class="file-action-btn file-download-btn" title="Download" onclick="event.stopPropagation();downloadFile('${path}')">⬇️</button>
+        <button class="file-action-btn file-rename-btn" title="Rename" onclick="event.stopPropagation();renameFilePopup('${path}')">✏️</button>
+        <button class="file-action-btn" title="Delete" onclick="event.stopPropagation();deleteFile('${path}')">🗑️</button>`;
+        el.onclick=()=>switchFile(path);
+        tree.appendChild(el);
+    });
+}
+/* --- Tabs --- */
+function renderTabs(){
+    const tabs=document.getElementById('tabs');
+    tabs.innerHTML="";
+    curTabs=Object.keys(vfs).sort().filter(f=>!!vfs[f]);
+    curTabs.forEach(path=>{
+        let filename=path.split("/").pop();
+        let tab=document.createElement('div');
+        tab.className="tab"+(path===activeFile?' active':'');
+        tab.innerHTML=`${filename}
+            <button class="tab-download-btn" title="Download" onclick="event.stopPropagation();downloadFile('${path}')">⬇️</button>
+            <button class="tab-close-btn" title="Close" onclick="event.stopPropagation();closeTab('${path}')">×</button>`;
+        tab.onclick=()=>switchFile(path);
+        tabs.appendChild(tab);
+    });
+}
+function closeTab(path){
+    delete vfs[path];
+    if(path===activeFile) activeFile=curTabs.find(f=>f!==path)||Object.keys(vfs)[0];
+    updateUI();
+}
+function switchFile(path){
+    if(vfs[activeFile] && monacoEditor) vfs[activeFile]=monacoEditor.getValue();
+    activeFile=path;
+    if(monacoEditor){
+        let model = editorModels[path];
+        if(!model){
+            model = monaco.editor.createModel(vfs[path]||"", getMonacoLang(path), monaco.Uri.parse(`inmemory://model/${path}`));
+            editorModels[path]=model;
+        }
+        monacoEditor.setModel(model);
+        monaco.editor.setModelLanguage(model,getMonacoLang(path));
+    }
+    updateUI();
+}
+/* --- File ops --- */
+function newFilePopup(){
+    openModal("New file (e.g. src/module.cpp)", "", (val)=>{
+        if(!val||!/^[\w\-\.\/]+$/.test(val)||vfs[val]){
+            alert("Invalid or duplicate filename!"); return false;
+        }
+        vfs[val]="";
+        switchFile(val); updateUI();
+    });
+}
+function renameFilePopup(p){
+    openModal("Rename file",p,(val)=>{
+        if(!val||vfs[val]||val===p){alert('Invalid or duplicate filename!');return false;}
+        vfs[val]=vfs[p]; delete vfs[p]; if(editorModels[p]){editorModels[val]=editorModels[p];delete editorModels[p];}
+        if(activeFile===p) activeFile=val;
+        updateUI();
+    },p);
+}
+function deleteFile(p){
+    if(confirm("Delete file "+p+"?")){ delete vfs[p]; if(activeFile===p) activeFile=Object.keys(vfs)[0]; updateUI();}
+}
+function downloadFile(p){
+    let a=document.getElementById('file-download-link');
+    let ext=p.split(".").pop();
+    let type = ext==="md"?"text/markdown": ext==="json"?"application/json":"text/plain";
+    let blob = new Blob([vfs[p]],{type});
+    a.href = URL.createObjectURL(blob);
+    a.download=p; a.click();
+}
+function closeModal(){
+    document.getElementById('modal').classList.add('hidden');
+}
+function openModal(label,def,cb,preset){
+    let m=document.getElementById('modal');
+    document.getElementById('modal-label').innerText = label;
+    let i=document.getElementById('modal-input');
+    i.value=def||""; m.classList.remove('hidden');
+    i.focus(); i.select();
+    window.modalConfirm = function(){
+        if(cb(i.value)!==false) closeModal();
+    }
+    i.onkeydown=function(e){ if(e.key==="Enter") window.modalConfirm(); }
+}
+function previewFile(){
+    const path = activeFile;
+    const code = vfs[path];
+    let ext = path.split(".").pop().toLowerCase();
+    let contentEl=document.getElementById('preview-modal-content');
+    contentEl.innerHTML="<em>Loading preview...</em>";
+    document.getElementById('preview-modal').classList.remove('hidden');
+    // Markdown
+    if(ext==="md"){
+        contentEl.innerHTML = marked.parse(code);
+    }
+    // HTML
+    else if(ext==="html"){
+        contentEl.innerHTML=`<iframe srcdoc="${encodeURIComponent(code).replace(/"/g,'&quot;')}" style="width:100%;min-height:60vh;border:none;background:#fff;"></iframe>`;
+    }
+    // Node.js/javasript: eval, show console.log
+    else if(ext==="js"||ext==="json"){
+        let result,output="";
+        try {
+            let logs=[];
+            let orig=console.log;
+            console.log=(...args)=>logs.push(args.join(" "));
+            if(ext==="js"){eval(code);}
+            else{output=JSON.stringify(JSON.parse(code),null,2);}
+            console.log=orig;
+            if(logs.length) output=logs.join("\n");
+            else if(!output) output="(Script ran successfully; no stdout.)";
+        }catch(e){output="Error: "+e;}
+        contentEl.innerHTML=`<pre>${output||''}</pre>`;
+    }
+    else{
+        contentEl.innerHTML = `<pre>${escapeHTML(code)}</pre>`;
+    }
+}
+function closePreview(){
+    document.getElementById('preview-modal').classList.add('hidden');
+}
+function escapeHTML(str) {
+    return String(str).replace(/[&<>"']/g, function(m) {
+        return ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[m];
+    });
+}
+/* ====== SEARCH ====== */
+document.getElementById('file-search').oninput=updateUI;
+document.getElementById('content-search').oninput=function(){
+    let q=this.value.toLowerCase();
+    [...document.getElementsByClassName('tab')].forEach(tab=>{
+        let p = curTabs.find(t=>tab.textContent.trim().startsWith(t.split("/").pop()))
+        if(q && vfs[p].toLowerCase().includes(q)) tab.style.background="#bbf7d0";
+        else tab.style.background="";
+    });
+}
+/* ====== SYSTEM CONSTRAINTS ====== */
+let editingConstraints=false;
+function toggleConstraints(){
+    editingConstraints=!editingConstraints;
+    document.getElementById('constraints-edit').classList.toggle('hidden',!editingConstraints);
+    document.getElementById('constraints-read').classList.toggle('hidden',editingConstraints);
+    if(editingConstraints){
+        document.getElementById('edit-arch-desc').value = constraints.arch;
+        document.getElementById('edit-strict-desc').value = constraints.strict;
+    }
+}
+function saveConstraints(e){
+    e.preventDefault();
+    constraints.arch = document.getElementById('edit-arch-desc').value;
+    constraints.strict=document.getElementById('edit-strict-desc').value;
+    document.getElementById('arch-desc').textContent=constraints.arch;
+    document.getElementById('strict-desc').textContent=constraints.strict;
+    editingConstraints=false;toggleConstraints();
+    saveConstraintsLS();
+}
+
+/* ====== MONACO ====== */
+function getMonacoLang(file){
+    const ext = file.split('.').pop().toLowerCase();
+    return {cpp:'cpp',cc:'cpp',h:'cpp',js:'javascript',ts:'typescript',json:'json',md:'markdown',py:'python',java:'java',c:'c',html:'html',css:'css'}[ext]||'plaintext';
+}
+require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
+require(['vs/editor/editor.main'], function() {
+    loadVFS();loadChat();loadActiveFile();loadConstraints();
+    monacoEditor=monaco.editor.create(document.getElementById('monaco-container'), {
+        value: vfs[activeFile]||"",
+        language: getMonacoLang(activeFile),
+        theme: theme==="dark"?"vs-dark":"vs",
+        automaticLayout: true,
+        fontSize: 14,
+        fontFamily: "'Fira Code', 'Courier New', monospace"
+    });
+    monacoEditor.onDidChangeModelContent(()=>{vfs[activeFile]=monacoEditor.getValue(); saveVFS();});
+    updateUI();
+});
+
+/* ====== AI DROPDOWN (model selection) ====== */
+const aiDropdownBtn = document.getElementById('modelBtn');
+const aiDropdownMenu = document.getElementById('aiDropdown');
+aiDropdownBtn.onclick = function(e){
+    aiDropdownMenu.classList.toggle('show');
+};
+document.body.onclick = (e)=>{
+    if(!aiDropdownMenu.contains(e.target)) aiDropdownMenu.classList.remove('show');
+};
+Array.from(document.getElementsByClassName('dropdown-option')).forEach(opt=>{
+    opt.onclick=function(){
+        Array.from(document.getElementsByClassName('dropdown-option')).forEach(x=>x.classList.remove('selected'));
+        this.classList.add('selected');
+        selectedModel=this.getAttribute('data-model');
+        localStorage.setItem('studio_ai_model',selectedModel);
+        document.getElementById('ai-selected-label').innerText = this.innerText.split('\n')[0];
+        aiDropdownMenu.classList.remove('show');
+    }
+});
+(function updateModelDefaultSelection(){
+    Array.from(document.getElementsByClassName('dropdown-option')).forEach(opt=>
+        opt.classList.toggle('selected',opt.getAttribute('data-model')===selectedModel)
+    );
+    document.getElementById('ai-selected-label').innerText = aiModels.filter(m=>m.key===selectedModel)[0]?.name || "Auto";
+    })();
+
+/* ========== AI INTEGERATION & AUTO ROUTING ========== */
+mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
+marked.setOptions({
+    highlight: function(code, lang) {
+        const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+        return hljs.highlight(code||'', { language }).value;
+    }
+});
+const SYSTEM_PROMPT = ()=> SYSTEM_PROMPT_BASE+"\n"+`System Constraints:\n - ${constraints.arch}\n - ${constraints.strict}`;
+const chatInput = document.getElementById('chat-input');
+const chatHistory = document.getElementById('chat-history');
+const aiStatus = document.getElementById('ai-status');
+chatInput.addEventListener('keydown',function(e){
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();handleAI();}
+});
+let AI_ROUTING_HINTS = [
+    // [test, model, reason]
+    [ q=> /\b(css|tailwind|ui|ux|react|html|button|color|style|figma|font|illustrat|dall-?e|logo|palette|responsive|mobile)\b/i.test(q), "gpt-4o", "UI/UX/Design routed to GPT-4o" ],
+    [ q=> /\b(microservice|api|k8s|kubernetes|agent|backend|devstral|ci\/cd|CI\/CD|multi\-file|memory safety)\b/i.test(q), "mistralai/devstral-2512", "Advanced backend routed to Devstral" ],
+    [ q=> /\b(pipeline|big codebase|mlflow|orchestrator|cloud function|google|vertex ai)\b/i.test(q), "google/gemini-2.5-pro-exp-03-25:free", "Large codebase/pipeline routed to Gemini" ],
+    [ q=> /\b(security|architecture|scalable|system design|llama)\b/i.test(q), "meta-llama/llama-3.3-70b-instruct:free", "Arch/security routed to Llama 3.3" ],
+    [ q=> /\b(api|db|database|query|distributed|replication|raft|deepseek)\b/i.test(q), "deepseek/deepseek-v3-base:free","APIs/DBs to DeepSeek" ],
+    [ q=> /\b(debug|tool|agent|autonomous|minimax)\b/i.test(q), "minimax/minimax-m2.5", "Agent/tool calls to Minimax" ]
+];
+function modelRouter(query){
+    for(let [test,model,reason] of AI_ROUTING_HINTS) if(test(query)) return [model,reason];
+    if(query.length<22||/hello|test|ping/i.test(query)) return ["gpt-4o","Short/simple: fast/cheap"];
+    // Fallback: if includes "design" use gpt-4o; if "backend" devstral, etc
+    return ["mistralai/devstral-2512","Default: complex coding"];
+}
+
+/* --- AI messaging/rendering --- */
+function renderAIMessage(raw){
+    let html = marked.parse(raw||'').replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g, (full, diagram) => {
+        const id = 'mm-'+Math.random().toString(36).substring(2);
+        setTimeout(() => {
+            try {
+                mermaid.render(id, diagram, (svg) => {
+                    const el = document.getElementById(id);
+                    if (el) el.innerHTML = svg;
+                });
+            } catch{}
+        },100);
+        return `<div class="mermaid" id="${id}">${diagram}</div>`;
+    });
+    return html;
+}
+async function handleAI(){
+    const text = chatInput.value.trim();
+    if(!text) return;
+    chatInput.value = '';
+    aiStatus.textContent = 'THINKING...';
+
+    // Add to chat (persist too)
+    chatState.history.push({role:"user",text});
+    saveChat();
+    let userMsg = document.createElement('div'); userMsg.className='msg msg-user'; userMsg.textContent=text; chatHistory.appendChild(userMsg);
+    let aiMsg = document.createElement('div'); aiMsg.className='msg msg-ai'; aiMsg.innerHTML='<i>AI is typing...</i>'; chatHistory.appendChild(aiMsg); chatHistory.scrollTop = chatHistory.scrollHeight;
+    let responseBuffer = "";
+    let modelLabel = selectedModel, routerReason="";
+
+    // AUTO MODE!
+    let useModel = selectedModel, modelName=null;
+    if(selectedModel==="auto"){
+        [useModel,routerReason]=modelRouter(text);
+        modelLabel+= " → "+useModel+"<br><span class='text-[10px] text-blue-400'>("+routerReason+")</span>";
+    }
+    modelName = aiModels.find(m=>m.key===useModel)?.name || useModel;
+
+    try{
+        const stream = await puter.ai.chat(SYSTEM_PROMPT()+"\nUser: "+text, { model: useModel, stream: true });
+        for await (const part of stream) {
+            if(part?.text){
+                responseBuffer += part.text;
+                aiMsg.innerHTML=renderAIMessage(responseBuffer);
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+            }
+        }
+    }catch(e){
+        aiStatus.innerText="READY";
+        aiMsg.innerHTML='<span style="color:#f85149">AI error: '+e.message+'</span>';
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+        return;
+    }
+    aiStatus.innerHTML = "READY";
+    chatState.history.push({role:"ai",text:responseBuffer,model:useModel});
+    saveChat();
+    processAIResponseAndFiles(responseBuffer);
+}
+function processAIResponseAndFiles(markdown){
+    // Parse ```lang:path\ncode``` blocks
+    const fileRegex=/```(\w+):([^\s\n]+)\n([\s\S]*?)```/g;
+    let foundFirstNew=false,match,changed=false;
+    while((match=fileRegex.exec(markdown))!==null){
+        let lang=match[1],path=match[2],code=match[3].replace(/\n+$/,"");
+        vfs[path]=code; changed=true;
+        if(!foundFirstNew){activeFile=path;foundFirstNew=true;}
+    }
+    if(changed)updateUI();
+}
+
+// Restore chat history on load
+function renderChat(){
+    chatHistory.innerHTML="";
+    for(let m of chatState.history||[]){
+        let div=document.createElement('div');
+        div.className='msg '+(m.role==='user'?'msg-user':'msg-ai');
+        if(m.role==="ai") div.innerHTML=renderAIMessage(m.text);  
+        else div.textContent=m.text;
+        chatHistory.appendChild(div);
+    }
+}
+window.onload = ()=>{ setTimeout(()=>monacoEditor?monacoEditor.focus():null, 1200); renderChat(); updateUI(); }
+
+/* ======= TERMINAL ======= */
+function logTerm(msg, type=''){
+    let div=document.createElement('div');
+    div.className=type; div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    let out=document.getElementById('terminal-output');
+    out.appendChild(div);
+    out.scrollTop=out.scrollHeight;
+}
+function clearTerminal(){document.getElementById('terminal-output').innerHTML='';}
+function simulateBuild(){
+    logTerm('>>> Starting Project Compilation...','term-system');
+    setTimeout(()=>logTerm('Linker: Resolving microservice dependencies...'),600);
+    setTimeout(()=>logTerm('Optimizer: Level O3 Applied.','term-success'),1200);
+    setTimeout(()=>logTerm('SUCCESS: All targets built successfully.','term-success'),1800);
+}
+async function exportProject(){
+    const zip=new JSZip();
+    Object.entries(vfs).forEach(([p,c])=>zip.file(p,c));
+    const blob=await zip.generateAsync({type:"blob"});
+    saveAs(blob, "Studio_Export.zip");
+    logTerm('>>> Workspace exported as Studio_Export.zip','term-success');
+}
+
+/* ======= SIDEBAR/MOBILE ======= */
+const sidebarPanel=document.getElementById('sidebar-panel');
+document.getElementById('mini-tree-btn').onclick=function(){
+    sidebarPanel.classList.toggle('hidden');
+};
+
+</script>
+</body>
+</html>
